@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppCode Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Search App Code Data</h1>
+    <input type="text" id="searchBox" placeholder="Enter search term">
+    <button id="searchButton">Search</button>
+    <div id="results"></div>
+
+    <script>
+        document.getElementById('searchButton').addEventListener('click', async () => {
+            const query = document.getElementById('searchBox').value;
+            if (query) {
+                try {
+                    const response = await fetch(`/search?q=${query}`);
+                    const data = await response.json();
+                    document.getElementById('results').innerText = JSON.stringify(data, null, 2);
+                } catch (error) {
+                    document.getElementById('results').innerText = 'Error: ' + error.message;
+                }
+            } else {
+                alert('Please enter a search term');
+            }
+        });
+    </script>
+</body>
+
+</html>

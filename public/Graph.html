@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppCode Graph</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+    <style>
+        .node circle {
+            fill: steelblue;
+            stroke: #fff;
+            stroke-width: 3px;
+        }
+
+        .node text {
+            font: 12px sans-serif;
+        }
+
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 2px;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            padding: 5px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Generate App Code Graph</h1>
+    <input type="text" id="searchBox" placeholder="Enter search term">
+    <button id="searchButton">Search</button>
+    <div id="results"></div>
+    <div id="tooltip" class="tooltip"></div>
+    <script src="./node_modules/d3/dist/d3.min.js"></script>
+
+    <script>
+        document.getElementById('searchButton').addEventListener('click', async () => {
+            const query = document.getElementById('searchBox').value;
+            if (query) {
+                try {
+                    const response = await fetch(`/search?q=${query}`);
+                    const data = await response.json();
+                    //document.getElementById('results').innerText = JSON.stringify(data, null, 2);
+                    renderTree(data);
+
+                } catch (error) {
+                    document.getElementById('results').innerText = 'Error: ' + error.message;
+                }
+            } else {
+                alert('Please enter a search term');
+            }
+        });
+
+        function renderTree(treeData) {
+            const margin = { top: 20, right: 120, bottom: 20, left: 120 },
+                width = 960 - margin.right - margin.left,
+                height = 600 - margin.top - margin.bottom;
+
+            const svg = d3.select("body").append("svg")
+                .attr("width", width + margin.right + margin.left)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            const root = d3.hierarchy(treeData);
+
+            const treeLayout = d3.tree().size([height, width]);
+
+            treeLayout(root);
+
+            const link = svg.selectAll(".link")
+                .data(root.links())
+                .enter().append("path")
+                .attr("class", "link")
+                .attr("d", d3.linkHorizontal()
+                    .x(d => d.y)
+                    .y(d => d.x));
+
+            const node = svg.selectAll(".node")
+                .data(root.descendants())
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.y},${d.x})`);
+
+            const tooltip = d3.select("#tooltip");
+
+            node.append("a")
+                .attr("xlink:href", d => d.data.url)
+                .append("circle")
+                .attr("r", 10)
+                .attr("fill", d => d.children ? "lightsteelblue" : "#ff0000")
+                .on("mouseover", (event, d) => {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html(`Name: ${d.data.name}<br>URL: ${d.data.url}`)
+                        .style("left", (event.pageX + 5) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", (event, d) => {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+
+            node.append("text")
+                .attr("dy", 3)
+                .attr("x", d => d.children ? -12 : 12)
+                .style("text-anchor", d => d.children ? "end" : "start")
+                .text(d => d.data.name);
+        }
+
+    </script>
+
+</body>
+
+</html>
